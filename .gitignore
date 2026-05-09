@@ -1,7 +1,11 @@
-# Credentials — never commit
+# Credentials and machine-local state — never commit
 .cf-access
+.cf-hosts
 .cf-ssh-key
 .cf-ssh-key.pub
 .ssh-known_hosts
 .keeper/
 *.keeper-config*
+
+# Discovery output (raw dumps from hosts; promote to docs/ after review)
+discovery/

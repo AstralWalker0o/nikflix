@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Run a command on a nikflix Docker host through Cloudflare Access SSH.
+# Usage:  bin/nfssh <host-key> <command...>
+#         bin/nfssh int-per-dk-02 'docker ps'
+# Hosts are resolved via .cf-hosts (host-key=<cf-hostname>:<unix-user>).
+
+set -euo pipefail
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+HOSTKEY="${1:?host key required}"; shift
+HOSTS_FILE="$ROOT/.cf-hosts"
+[[ -f "$HOSTS_FILE" ]] || { echo "missing $HOSTS_FILE" >&2; exit 2; }
+
+LINE=$(grep -E "^${HOSTKEY}=" "$HOSTS_FILE" || true)
+[[ -n "$LINE" ]] || { echo "host '$HOSTKEY' not in $HOSTS_FILE" >&2; exit 2; }
+SPEC=${LINE#*=}
+CF_HOST=${SPEC%%:*}
+SSH_USER=${SPEC##*:}
+
+# Cloudflare Access service token + ssh key passphrase
+set -a; . "$ROOT/.cf-access"; set +a
+PASS_FILE="${PASS_FILE:-/tmp/.cf-key-pass}"
+ASKPASS="${ASKPASS:-/tmp/askpass.sh}"
+
+exec env \
+    SSH_ASKPASS="$ASKPASS" SSH_ASKPASS_REQUIRE=force DISPLAY=dummy:0 \
+    setsid -w ssh \
+        -o ProxyCommand="cloudflared access ssh --hostname %h --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
+        -o IdentityFile="$ROOT/.cf-ssh-key" \
+        -o IdentitiesOnly=yes \
+        -o StrictHostKeyChecking=accept-new \
+        -o UserKnownHostsFile="$ROOT/.ssh-known_hosts" \
+        -o ConnectTimeout=20 \
+        -o ServerAliveInterval=30 \
+        "$SSH_USER@$CF_HOST" "$@"
