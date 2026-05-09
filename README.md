@@ -1,7 +1,7 @@
 # nikflix
 
 Personal homelab for media (movies, TV, music, books, audiobooks), automation
-(Home Assistant, Zigbee), productivity (Nextcloud, Firefly III), and a bunch of
+(Home Assistant, Zigbee), productivity (Firefly III), and a bunch of
 adjacent services. Built incrementally over ~10 years across local and cloud
 generations.
 
@@ -28,7 +28,7 @@ ultimately replace them.
 
 | Host | LAN IP | Role |
 |---|---|---|
-| `INT-PER-DK-01` | 10.10.100.196 | Media server tier (Jellyfin, Bazarr, Nextcloud AIO, Firefly III, NPM, ShieldControl, etc.) |
+| `INT-PER-DK-01` | 10.10.100.196 | Media server tier (Jellyfin, Bazarr, Firefly III, ShieldControl, etc.) |
 | `INT-PER-DK-02` | 10.10.100.197 | *arr + downloads tier (Sonarr/Radarr/Prowlarr/Lidarr/Readarr, qBit-VPN, SABnzbd, Calibre, cloudflared tunnel) |
 
 A third LAN address (`10.10.100.205`) appears in the cloudflared ingress for

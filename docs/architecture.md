@@ -24,7 +24,6 @@
               │ INT-PER-DK-01   10.10.100.196                   │
               │                                                 │
               │   Jellyfin · Bazarr · Jellyseerr                │
-              │   Nextcloud AIO (10 sub-containers)             │
               │   Firefly III (app + db + cron + importer)      │
               │   nginx-proxy-manager (NPM)                     │
               │   ShieldControl · KMS · Audiobookshelf          │
@@ -55,7 +54,6 @@ From the live cloudflared ingress on DK-02 (one tunnel for everything):
 | `dbooks.nikflix.net` | / | `http://10.10.100.197:8084` | Calibre downloader |
 | `home.internik.net` | / | `http://10.10.100.205:8123` | Home Assistant (third box) |
 | `finance.internik.net` | / | `http://10.10.100.196:8051` | Firefly III |
-| `admin.cloud.internik.net` | / | `https://10.10.100.196:8080` | Nextcloud AIO admin |
 | `remote-3.internik.net` | / | `ssh://10.10.100.205:22` | Legacy SSH route |
 | `ssh4.internik.net` | / | `ssh://10.10.100.197:22` | DK-02 SSH (claude) |
 | `ssh5.internik.net` | / | `ssh://10.10.100.196:22` | DK-01 SSH (claude) |
@@ -68,8 +66,8 @@ Public-hostname HTTP services that aren't meant for the open internet are
 protected by **Cloudflare Access**. Identity providers:
 
 - **Azure AD** — for human users (you and other end-users), via SSO. This
-  is how you and any users of Nextcloud / Firefly / Jellyseerr / etc. are
-  meant to authenticate.
+  is how you and any users of Firefly / Jellyseerr / etc. are meant to
+  authenticate.
 - **Service Auth** with the `claude-sandbox` service token — used by
   automation in this repo (the `bin/nfssh` wrapper). Scoped per-app and
   revocable from the Zero Trust dashboard.
@@ -89,10 +87,9 @@ Access policies sit in front of each application; see
   - **Jellyfin** (DK-01) reads media off shared filesystem (`/mnt/media`),
     populated by *arr/qBit/SABnzbd on DK-02. The `/mnt/media` mount is
     expected to be the same data on both hosts (NFS/SMB/etc. — confirm).
-- **nginx-proxy-manager** (NPM) on DK-01 fronts a few services internally,
-  notably Nextcloud AIO. NPM listens on host ports 80/81/443; cloudflared
-  forwards `admin.cloud.internik.net` → NPM, NPM forwards to AIO Apache on
-  port 11000.
+- **nginx-proxy-manager** (NPM) on DK-01 was fronting Nextcloud AIO; with
+  Nextcloud removed it currently has no active routes and is a candidate
+  for retirement.
 
 ## Storage roots (bind-mount conventions)
 

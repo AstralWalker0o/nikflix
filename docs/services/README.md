@@ -29,13 +29,13 @@ cross-service dependencies, notes/questions specific to *this* deployment.
 | [jellyfin](jellyfin.md) | (LAN/NPM) | Media server. Reads `/mnt/media` populated by DK-02 |
 | [jellyseerr](jellyseerr.md) | `requests.nikflix.net` | Talks to sonarr+radarr on DK-02 |
 | [bazarr](bazarr.md) | `services.nikflix.net/bazarr` | Subtitles. Cross-host API to *arr |
-| [nextcloud](nextcloud.md) | `cloud.internik.net`, `admin.cloud.internik.net` | AIO; behind NPM |
 | [firefly](firefly.md) | `finance.internik.net` | Multi-container; many secrets in `.env` |
-| [npm](npm.md) | (LAN) | nginx-proxy-manager. Internal layer between cloudflared and Nextcloud |
+| [npm](npm.md) | (LAN) | nginx-proxy-manager. Was the internal layer to Nextcloud AIO; now unused |
 | [shieldcontrol](shieldcontrol.md) | (LAN) | **Custom built-from-source app.** Multi-stage Dockerfile |
 | [kms](kms.md) | (LAN-only) | vlmcsd KMS emulator |
 | [audiobookshelf](audiobookshelf.md) | (LAN-only) | Audiobook library; was crashing on VM restart, now has `restart: unless-stopped` |
 
 [Removed services](_stale.md) — channels, homeassistant ghost, zero,
-zigbee2mqtt (all DK-01), and the leftover nextcloud on DK-02. Folders
+zigbee2mqtt (all DK-01), the leftover nextcloud on DK-02, and the live
+nextcloud AIO on DK-01 (purged with its data on user request). Folders
 deleted 2026-05-09.

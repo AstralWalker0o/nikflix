@@ -11,8 +11,7 @@ Media server tier. Each subdirectory is one service, with its own
 | [jellyfin](jellyfin/) | (LAN/NPM) | Reads `/mnt/media` populated by DK-02 |
 | [jellyseerr](jellyseerr/) | `requests.nikflix.net` | Talks to sonarr/radarr on DK-02 |
 | [kms](kms/) | (LAN-only) | vlmcsd KMS emulator |
-| [nextcloud](nextcloud/) | `cloud.internik.net`, `admin.cloud.internik.net` | AIO mastercontainer (spawns ~10 sub-containers); behind NPM |
-| [npm](npm/) | (LAN) | Reverse proxy for Nextcloud AIO |
+| [npm](npm/) | (LAN) | Reverse proxy. Was fronting Nextcloud AIO; now unused — candidate for removal |
 
 ## Not in this tree
 
