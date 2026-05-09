@@ -1,8 +1,18 @@
 # Service inventory
 
-One file per running service, plus [`_stale.md`](_stale.md) for the
-defined-but-not-running ones. Format: image, ports, bind mounts, env,
-cross-service dependencies, notes/questions specific to *this* deployment.
+Narrative documentation for each service: image, ports, bind mounts,
+env, cross-service dependencies, notes/questions specific to *this*
+deployment. One file per running service, plus
+[`_stale.md`](_stale.md) for the deleted/not-running ones.
+
+> **Where the deployable configs live:**
+> [`../../int-per-dk-01/<service>/`](../../int-per-dk-01/) and
+> [`../../int-per-dk-02/<service>/`](../../int-per-dk-02/) — those
+> directories hold the actual `docker-compose.yml` and
+> `.env.template` files. The per-host READMEs there have a more
+> operational view (Keeper records, autofill state, etc.).
+> This page is the *narrative* — what does each service do, how does it
+> talk to the others, what's worth knowing about it.
 
 ## DK-02 (10.10.100.197) — *arr + downloads tier
 
