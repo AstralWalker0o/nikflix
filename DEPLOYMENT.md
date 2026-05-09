@@ -53,11 +53,15 @@ caches, downloads) stays on each host — this repo does **not** move data.
 
    For a brand-new host with no live state, neither step is needed.
 
-3. **Populate `.env` files** — every service that needs secrets has a
-   committed `.env.example`. Until Keeper Secrets Manager is wired up
-   ([Phase 3](#phase-3--keeper-secrets-manager)), copy each `.env.example`
-   to `.env` (and `.db.env.example` to `.db.env` for `firefly`) and fill
-   in real values from Keeper manually. The `.env` files are gitignored.
+3. **Populate `.env` files from Keeper.** Services that need secrets ship
+   a `.env.template` next to their compose. Once `ksm` is initialised on
+   the host (see [`docs/keeper.md`](docs/keeper.md)), render every env
+   for the host in one pass:
+   ```bash
+   bin/ksm-render $(hostname)
+   ```
+   Or render a single service: `bin/ksm-render $(hostname) firefly`.
+   Resulting `.env` / `.db.env` files are mode 0600 and gitignored.
 
 4. **Bring services up** — per-service:
    ```bash
@@ -96,18 +100,17 @@ docker compose version    # should show v2.x
 Then everywhere in this repo, use `docker compose` (space) not
 `docker-compose` (dash).
 
-## Phase 3 — Keeper Secrets Manager
+## Keeper Secrets Manager flow
 
-Once a Keeper Secrets Manager Application is provisioned and shared with
-the right records, the manual `.env` step above is replaced by:
+Vault layout, Application setup, host-side `ksm` initialisation, and the
+template format are documented in [`docs/keeper.md`](docs/keeper.md).
+Day-to-day:
 
 ```bash
-ksm exec -- docker compose up -d   # one option
-# or, render envs ahead of time:
-ksm secret notation get keeper://record/field > .env
+# rotate a secret in Keeper, then on the host:
+bin/ksm-render $(hostname) <service>
+cd <hostname>/<service> && docker compose up -d
 ```
-
-See `docs/keeper.md` (TBD) for the exact pattern once we set it up.
 
 ## Hosts in scope
 

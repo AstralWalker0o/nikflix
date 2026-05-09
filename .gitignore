@@ -10,8 +10,9 @@
 # Discovery output (raw dumps from hosts; promote to docs/ after review)
 discovery/
 
-# Real .env files contain secrets — only the .env.example templates ship.
+# Real .env files contain secrets — rendered by bin/ksm-render at deploy
+# time from the .env.template files (which are committed).
 **/.env
 **/.db.env
-!**/.env.example
-!**/.db.env.example
+!**/.env.template
+!**/.db.env.template

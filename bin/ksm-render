@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# ksm-render — populate .env files for one host from Keeper Secrets Manager.
+#
+# Usage:
+#   bin/ksm-render <host>            render every .env.template under <host>/
+#   bin/ksm-render <host> <service>  render only that service's template
+#
+# Templates use {{keeper:<record-title>/<field-name>}} placeholders. The
+# script reads the local `ksm` CLI's output (must be initialised already —
+# see docs/keeper.md) to resolve them.
+
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+HOST="${1:?usage: $(basename "$0") <host> [service]}"
+SVC="${2:-}"
+
+[[ -d "$ROOT/$HOST" ]] || { echo "no such host directory: $ROOT/$HOST" >&2; exit 2; }
+command -v ksm >/dev/null      || { echo "ksm CLI not on PATH; see docs/keeper.md" >&2; exit 2; }
+command -v python3 >/dev/null  || { echo "python3 required for JSON parsing" >&2; exit 2; }
+
+# Find templates.
+if [[ -n "$SVC" ]]; then
+    templates=( "$ROOT/$HOST/$SVC/.env.template" )
+    [[ -f "${templates[0]}" ]] || { echo "no template: ${templates[0]}" >&2; exit 2; }
+else
+    mapfile -t templates < <(find "$ROOT/$HOST" -mindepth 2 -maxdepth 2 -name '.env.template' -print | sort)
+    if (( ${#templates[@]} == 0 )); then
+        echo "no .env.template files found under $HOST/"
+        exit 0
+    fi
+fi
+
+# Build a single Python tool that does the work — bash text munging is
+# painful with arbitrary secret values (newlines, $, backticks, etc.).
+PYTOOL=$(mktemp)
+trap 'rm -f "$PYTOOL"' EXIT
+cat >"$PYTOOL" <<'PY'
+import json, os, re, subprocess, sys, pathlib
+
+PLACEHOLDER = re.compile(r'\{\{keeper:([^/}]+)/([^}]+)\}\}')
+
+def ksm_json(args):
+    out = subprocess.run(
+        ["ksm", *args, "--json"],
+        check=True, capture_output=True, text=True,
+    ).stdout
+    return json.loads(out)
+
+# title -> uid (case-sensitive titles)
+title_to_uid = {}
+for rec in ksm_json(["secret", "list"]):
+    title_to_uid[rec.get("title", "")] = rec.get("uid")
+
+record_cache = {}
+
+def field_value(title, field):
+    if title not in title_to_uid:
+        raise KeyError(f"no Keeper record titled '{title}' is shared with this app")
+    uid = title_to_uid[title]
+    if uid not in record_cache:
+        rec = ksm_json(["secret", "get", "-u", uid, "--unmask"])
+        # ksm returns either a single dict or a list of one.
+        if isinstance(rec, list):
+            rec = rec[0]
+        record_cache[uid] = rec
+    rec = record_cache[uid]
+    for bucket in ("custom_fields", "custom", "fields"):
+        for f in rec.get(bucket) or []:
+            if (f.get("label") or f.get("type")) == field:
+                v = f.get("value")
+                if isinstance(v, list):
+                    return v[0] if v else ""
+                return v
+    raise KeyError(f"field '{field}' not found in record '{title}' ({uid})")
+
+def render(template_path):
+    text = pathlib.Path(template_path).read_text()
+    missing = []
+    def repl(m):
+        title, field = m.group(1), m.group(2)
+        try:
+            return str(field_value(title, field))
+        except KeyError as e:
+            missing.append(str(e))
+            return m.group(0)
+    rendered = PLACEHOLDER.sub(repl, text)
+    if missing:
+        return None, missing
+    return rendered, []
+
+def main(paths):
+    failures = 0
+    for p in paths:
+        out_path = p[:-len(".template")]
+        result, missing = render(p)
+        rel = pathlib.Path(p).relative_to(pathlib.Path.cwd()) if p.startswith(str(pathlib.Path.cwd())) else p
+        if missing:
+            print(f"  ✗ {rel}")
+            for m in missing:
+                print(f"      - {m}")
+            failures += 1
+            continue
+        # write 0600
+        fd = os.open(out_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as fh:
+            fh.write(result)
+        out_rel = pathlib.Path(out_path).relative_to(pathlib.Path.cwd()) if out_path.startswith(str(pathlib.Path.cwd())) else out_path
+        print(f"  ✓ {out_rel}")
+    sys.exit(1 if failures else 0)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+PY
+
+cd "$ROOT"
+echo "Rendering $HOST${SVC:+/$SVC}…"
+exec python3 "$PYTOOL" "${templates[@]}"
