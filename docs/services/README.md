@@ -34,7 +34,8 @@ cross-service dependencies, notes/questions specific to *this* deployment.
 | [npm](npm.md) | (LAN) | nginx-proxy-manager. Internal layer between cloudflared and Nextcloud |
 | [shieldcontrol](shieldcontrol.md) | (LAN) | **Custom built-from-source app.** Multi-stage Dockerfile |
 | [kms](kms.md) | (LAN-only) | vlmcsd KMS emulator |
+| [audiobookshelf](audiobookshelf.md) | (LAN-only) | Audiobook library; was crashing on VM restart, now has `restart: unless-stopped` |
 
-[Stale / non-running services](_stale.md) — audiobookshelf (DK-01),
-channels (DK-01, malformed), homeassistant (DK-01 ghost; live on `.205`),
-zero (DK-01 ZeroTier), zigbee2mqtt (DK-01), nextcloud (DK-02 leftover).
+[Removed services](_stale.md) — channels, homeassistant ghost, zero,
+zigbee2mqtt (all DK-01), and the leftover nextcloud on DK-02. Folders
+deleted 2026-05-09.

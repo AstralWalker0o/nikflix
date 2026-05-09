@@ -27,8 +27,7 @@
               │   Nextcloud AIO (10 sub-containers)             │
               │   Firefly III (app + db + cron + importer)      │
               │   nginx-proxy-manager (NPM)                     │
-              │   ShieldControl · KMS · ZeroTier (defined)      │
-              │   Home Assistant / Zigbee2MQTT / channels — defined but stopped
+              │   ShieldControl · KMS · Audiobookshelf          │
               └─────────────────────────────────────────────────┘
 
               + 10.10.100.205  — Home Assistant lives here per ingress;
@@ -117,23 +116,23 @@ Access policies sit in front of each application; see
    (zigbee2mqtt — likely upstream sample, never edited).
 3. **`version: "2.1"` declarations** in several composes — obsolete in
    Compose v2, harmless but worth removing.
-4. **Stale folders on DK-01** — `homeassistant`, `audiobookshelf`,
-   `channels`, `zero`, `zigbee2mqtt` have compose files but no live
-   container. Either retired, paused, or running elsewhere
-   (HA confirmed running on `.205`).
-5. **Two Nextcloud AIO compose files** — `/docker/nextcloud/` exists on
-   both DK-01 and DK-02 with different reverse-proxy configs. Only
-   DK-01's stack is currently running. DK-02's appears stale.
-6. **`channels/docker-compose.yml` is malformed** — `channels-dvr:` at
-   top level without a `services:` parent. Won't run on modern Compose.
-7. **`readarr/data.old/` directory** — leftover from a previous migration.
+4. **Stale folders cleaned up 2026-05-09** — `channels`, `homeassistant`
+   (ghost; live HA on `.205`), `zero`, `zigbee2mqtt` on DK-01 plus the
+   stale `nextcloud` on DK-02. See [`services/_stale.md`](services/_stale.md).
+   `audiobookshelf` was on the original list because the container had
+   crashed; restored with `restart: unless-stopped` so it auto-recovers.
+5. **`readarr/data.old/` directory** — leftover from a previous migration.
    Worth cleaning up after confirming it's not needed.
-8. **Cross-folder bind mount** — `calibre-downloader` on DK-02 mounts
+6. **Cross-folder bind mount** — `calibre-downloader` on DK-02 mounts
    `/docker/calibre-web/ingest` and `/docker/calibre-web/config/app.db`,
    tightly coupling the two services' deployment.
-9. **`firefly/` references `.db.env`** — credentials duplicated between
+7. **`firefly/` references `.db.env`** — credentials duplicated between
    `.env` (DB_PASSWORD) and `.db.env` (MYSQL_PASSWORD). Single source of
    truth needed when we move to Keeper.
-10. **`shieldcontrol/` is built from local source** — multi-stage Dockerfile
-    in `/docker/shieldcontrol/`. In Phase 3 we need to decide whether the
-    source lives in this repo or in its own.
+8. **`shieldcontrol/` is built from local source** — multi-stage Dockerfile
+   in `/docker/shieldcontrol/`. In Phase 3 we need to decide whether the
+   source lives in this repo or in its own.
+9. **`docker-compose` v1.29 is end-of-life** on both DK hosts and
+   incompatible with the Docker Engine 29 API surface — every recreate
+   throws `KeyError: 'ContainerConfig'` and needs `docker rm -f` first.
+   Migrate to the `docker compose` plugin (v2) as part of the restructure.
