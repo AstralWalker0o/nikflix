@@ -1,0 +1,15 @@
+version: "2.1"
+services:
+  maintainerr:
+    image: ghcr.io/maintainerr/maintainerr:latest
+    container_name: maintainerr
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=Australia/Perth
+    volumes:
+      - ./config:/config
+      - /mnt/datadisk01:/mnt/media
+    ports:
+      - 6246:6246
+    restart: unless-stopped

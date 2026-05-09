@@ -1,0 +1,16 @@
+version: "2.1"
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=Etc/UTC
+    volumes:
+      - ./config:/config
+      - /mnt/media:/mnt/media
+      - /mnt/downdisk01:/mnt/downdisk01
+    ports:
+      - 7878:7878
+    restart: unless-stopped

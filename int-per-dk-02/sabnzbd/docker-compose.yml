@@ -1,0 +1,16 @@
+version: "2.1"
+services:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=Etc/UTC
+    volumes:
+      - ./config:/config
+      - /mnt/media:/mnt/media
+      - /mnt/downdisk01:/mnt/downdisk01
+    ports:
+      - 8080:8080
+    restart: unless-stopped

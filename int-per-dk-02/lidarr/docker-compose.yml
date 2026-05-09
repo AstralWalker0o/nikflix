@@ -1,0 +1,15 @@
+services:
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=Etc/UTC
+    volumes:
+      - ./config:/config
+      - /mnt/media:/mnt/media
+      - /mnt/downdisk01:/mnt/downdisk01
+    ports:
+      - 8686:8686
+    restart: unless-stopped

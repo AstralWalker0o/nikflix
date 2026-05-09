@@ -9,3 +9,9 @@
 
 # Discovery output (raw dumps from hosts; promote to docs/ after review)
 discovery/
+
+# Real .env files contain secrets — only the .env.example templates ship.
+**/.env
+**/.db.env
+!**/.env.example
+!**/.db.env.example

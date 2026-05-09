@@ -1,0 +1,38 @@
+services:
+  qbittorrentvpn:
+    image: binhex/arch-qbittorrentvpn
+    container_name: qbittorrentvpn
+    privileged: true
+    ports:
+      - "8082:8082"
+      - "8118:8118"
+      - "9118:9118"
+      - "58946:58946"
+      - "58946:58946/udp"
+    volumes:
+      - ./data:/data
+      - ./config:/config
+      - /mnt/downdisk01:/mnt/downdisk01
+    environment:
+      - VPN_ENABLED=yes
+      - VPN_USER=${VPN_USER}
+      - VPN_PASS=${VPN_PASS}
+      - VPN_PROV=pia
+      - VPN_CLIENT=wireguard
+      - ENABLE_STARTUP_SCRIPTS=no
+      - ENABLE_PRIVOXY=yes
+      - STRICT_PORT_FORWARD=yes
+      - USERSPACE_WIREGUARD=no
+      - ENABLE_SOCKS=yes
+      - SOCKS_USER=${SOCKS_USER}
+      - SOCKS_PASS=${SOCKS_PASS}
+      - LAN_NETWORK=10.10.100.0/24
+      - NAME_SERVERS=84.200.69.80,37.235.1.174,1.1.1.1,37.235.1.177,84.200.70.40,1.0.0.1
+      - VPN_INPUT_PORTS=1234
+      - VPN_OUTPUT_PORTS=5678
+      - DEBUG=false
+      - WEBUI_PORT=8082
+      - UMASK=000
+      - PUID=0
+      - PGID=0
+    restart: unless-stopped

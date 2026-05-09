@@ -1,0 +1,11 @@
+version: "2.1"
+services:
+  tunnel:
+    container_name: cloudflared-tunnel
+    image: cloudflare/cloudflared
+    restart: always
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -1,0 +1,114 @@
+##############################################################################
+# Nextcloud AIO — Behind Nginx Proxy Manager (NPM)
+#
+# Prerequisites:
+#   - Docker & Docker Compose installed
+#   - NPM already running on this machine
+#   - cloud.internik.net pointing to your server
+#   - SSL cert configured in NPM for cloud.internik.net
+#
+# Usage:
+#   1. Run: docker compose up -d
+#   2. Configure NPM proxy host (see below)
+#   3. Open https://<YOUR_SERVER_IP>:8080 to access the AIO admin panel
+#   4. Follow the setup wizard
+#
+# NPM Proxy Host Configuration:
+#   ┌─────────────────────────────────────────────────────────┐
+#   │ Details tab:                                            │
+#   │   Domain:          cloud.internik.net                   │
+#   │   Scheme:          http                                 │
+#   │   Forward IP:      127.0.0.1 (or server LAN IP if NPM  │
+#   │                    is in a separate Docker network)     │
+#   │   Forward Port:    11000                                │
+#   │   Websockets:      ON                                   │
+#   │                                                         │
+#   │ SSL tab:                                                │
+#   │   SSL Certificate: (select/request Let's Encrypt cert)  │
+#   │   Force SSL:       ON                                   │
+#   │   HTTP/2:          ON                                   │
+#   │                                                         │
+#   │ Advanced tab — paste this custom config:                │
+#   │                                                         │
+#   │   client_max_body_size 0;                               │
+#   │   client_body_timeout 1d;                               │
+#   │   client_body_buffer_size 512k;                         │
+#   │   proxy_read_timeout 1d;                                │
+#   │   proxy_connect_timeout 1d;                             │
+#   │   proxy_send_timeout 1d;                                │
+#   │                                                         │
+#   └─────────────────────────────────────────────────────────┘
+#
+# Docs: https://github.com/nextcloud/all-in-one
+#       https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md
+##############################################################################
+
+services:
+  nextcloud-aio-mastercontainer:
+    image: nextcloud/all-in-one:latest
+    init: true
+    restart: always
+    container_name: nextcloud-aio-mastercontainer
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8443:8080"       # AIO admin interface (HTTPS) — 8080 taken by NPM
+    environment:
+      ##########################################################################
+      # Reverse proxy settings
+      ##########################################################################
+
+      # Port the AIO Apache container listens on (NPM forwards to this)
+      - APACHE_PORT=11000
+
+      # Bind to localhost only — NPM handles external traffic
+      - APACHE_IP_BINDING=10.10.100.196
+
+      # Domain config
+      - NEXTCLOUD_TRUSTED_DOMAIN=cloud.internik.net
+
+      # Set to false so AIO validates the domain through NPM
+      # (make sure NPM proxy host + SSL is configured BEFORE running setup)
+      - SKIP_DOMAIN_VALIDATION=false
+
+      ##########################################################################
+      # General settings
+      ##########################################################################
+
+      - NEXTCLOUD_TIMEZONE=Australia/Perth
+      - COLLABORA_DICTIONARIES=en_AU en_US
+
+      ##########################################################################
+      # Enabled features
+      ##########################################################################
+
+      - CLAMAV_ENABLED=yes
+      - FULLTEXTSEARCH_ENABLED=yes
+      - TALK_RECORDING_ENABLED=yes
+      - IMAGINARY_ENABLED=yes
+
+      # NOTE: Pick ONE — Collabora OR OnlyOffice, not both.
+      # Both enabled at once will cause conflicts.
+      - COLLABORA_ENABLED=yes
+      - ONLYOFFICE_ENABLED=no
+
+      ##########################################################################
+      # Optional — uncomment as needed
+      ##########################################################################
+
+      # Custom data directory on the host
+      # - NEXTCLOUD_DATADIR=/mnt/storage/nextcloud-data
+
+      # Upload limit (default: 10G)
+      # - NEXTCLOUD_UPLOAD_LIMIT=10G
+
+      # Memory limit per PHP process (default: 512M)
+      # - NEXTCLOUD_MEMORY_LIMIT=1024M
+
+      # Pre-install apps
+      # - NEXTCLOUD_STARTUP_APPS=mail calendar contacts deck tasks notes
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
