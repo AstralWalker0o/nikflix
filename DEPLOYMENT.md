@@ -104,13 +104,20 @@ Then everywhere in this repo, use `docker compose` (space) not
 
 Vault layout, Application setup, host-side `ksm` initialisation, and the
 template format are documented in [`docs/keeper.md`](docs/keeper.md).
-Day-to-day:
+
+Day-to-day rotation is one command. After editing a secret in Keeper, on
+the host:
 
 ```bash
-# rotate a secret in Keeper, then on the host:
-bin/ksm-render $(hostname) <service>
-cd <hostname>/<service> && docker compose up -d
+bin/refresh $(hostname)            # all services with templates
+bin/refresh $(hostname) firefly    # one service
 ```
+
+`refresh` calls `ksm-render`, diffs the rendered env against
+`/docker/<svc>/.env`, backs up the current file (`*.bak.<timestamp>`),
+swaps the new one in (mode 0600), then `docker compose up -d
+--force-recreate` only the services whose env actually changed. Skips
+the rest.
 
 ## Hosts in scope
 

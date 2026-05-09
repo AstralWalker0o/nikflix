@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# refresh — pull secrets from Keeper, copy into the live /docker/<svc>/
+# tree, restart any service whose env actually changed.
+#
+# Usage:
+#   bin/refresh <host> [<service>]
+#
+# This is the "rotate a secret in Keeper, push it to running containers"
+# button. Run it on the host (it expects the repo at /home/claude/nikflix
+# and the live state at /docker/<svc>/).
+#
+# It calls bin/ksm-render to materialise <host>/<svc>/.env from the
+# committed .env.template, then diffs against /docker/<svc>/.env. If they
+# differ, it backs up the current /docker copy, installs the new one, and
+# `docker compose up -d --force-recreate`s the service. Services with no
+# template (most of them — only firefly/qbit/tunnel today) are skipped.
+
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+LIVE=/docker
+HOST="${1:?usage: $(basename "$0") <host> [service]}"
+SVC="${2:-}"
+KSM_RENDER="$ROOT/bin/ksm-render"
+
+[[ -d "$ROOT/$HOST" ]]   || { echo "no host directory: $ROOT/$HOST" >&2; exit 2; }
+[[ -x "$KSM_RENDER" ]]   || { echo "missing $KSM_RENDER" >&2; exit 2; }
+command -v docker >/dev/null || { echo "docker not on PATH" >&2; exit 2; }
+docker compose version >/dev/null 2>&1 || {
+    echo "docker compose v2 required (the v1 'docker-compose' binary is broken with Engine 29)" >&2
+    exit 2
+}
+
+# Render the env(s) for the target.
+if [[ -n "$SVC" ]]; then
+    "$KSM_RENDER" "$HOST" "$SVC"
+else
+    "$KSM_RENDER" "$HOST"
+fi
+
+# Find every <svc> with a rendered .env (or .db.env) under the host dir.
+mapfile -t services < <(
+    if [[ -n "$SVC" ]]; then
+        echo "$SVC"
+    else
+        for d in "$ROOT/$HOST"/*/; do
+            svc=$(basename "$d")
+            { [[ -f "$d/.env" ]] || [[ -f "$d/.db.env" ]]; } && echo "$svc"
+        done
+    fi
+)
+
+(( ${#services[@]} > 0 )) || { echo "no services with rendered envs"; exit 0; }
+
+stamp=$(date +%Y%m%d-%H%M%S)
+restarted=()
+for svc in "${services[@]}"; do
+    repo_dir="$ROOT/$HOST/$svc"
+    live_dir="$LIVE/$svc"
+    [[ -d "$live_dir" ]] || { echo "  skip $svc (no $live_dir on host)"; continue; }
+    [[ -f "$live_dir/docker-compose.yml" ]] || [[ -f "$live_dir/docker-compose.yaml" ]] \
+        || { echo "  skip $svc (no compose at $live_dir)"; continue; }
+
+    changed=0
+    for envf in .env .db.env; do
+        [[ -f "$repo_dir/$envf" ]] || continue
+        if ! cmp -s "$repo_dir/$envf" "$live_dir/$envf" 2>/dev/null; then
+            [[ -f "$live_dir/$envf" ]] && cp -p "$live_dir/$envf" "$live_dir/$envf.bak.$stamp"
+            install -m 600 "$repo_dir/$envf" "$live_dir/$envf"
+            echo "  $svc: $envf updated (backup → $live_dir/$envf.bak.$stamp)"
+            changed=1
+        fi
+    done
+    if (( changed )); then
+        echo "  $svc: docker compose up -d --force-recreate"
+        ( cd "$live_dir" && docker compose up -d --force-recreate )
+        restarted+=("$svc")
+    else
+        echo "  $svc: env unchanged"
+    fi
+done
+
+echo
+if (( ${#restarted[@]} > 0 )); then
+    echo "Restarted: ${restarted[*]}"
+else
+    echo "Nothing restarted."
+fi
