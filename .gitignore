@@ -1,0 +1,7 @@
+# Credentials — never commit
+.cf-access
+.cf-ssh-key
+.cf-ssh-key.pub
+.ssh-known_hosts
+.keeper/
+*.keeper-config*
