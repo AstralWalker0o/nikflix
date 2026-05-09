@@ -24,7 +24,7 @@ if [[ -n "$SVC" ]]; then
     templates=( "$ROOT/$HOST/$SVC/.env.template" )
     [[ -f "${templates[0]}" ]] || { echo "no template: ${templates[0]}" >&2; exit 2; }
 else
-    mapfile -t templates < <(find "$ROOT/$HOST" -mindepth 2 -maxdepth 2 -name '.env.template' -print | sort)
+    mapfile -t templates < <(find "$ROOT/$HOST" -mindepth 2 -maxdepth 2 \( -name '.env.template' -o -name '.db.env.template' \) -print | sort)
     if (( ${#templates[@]} == 0 )); then
         echo "no .env.template files found under $HOST/"
         exit 0
