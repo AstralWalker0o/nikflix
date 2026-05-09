@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# probe-form — render a URL via headless Chromium and dump form-related
+# elements with selector-friendly attributes.
+#
+# Usage:
+#   bin/probe-form <url> [--wait <seconds>] [--ignore-ssl]
+#
+# Runs in a Microsoft Playwright Python image so we don't need sudo for
+# the OS deps Chromium requires. The probe-form.py script is bind-mounted
+# read-only. Container uses host networking so it can reach LAN IPs
+# directly (10.10.100.x:port), which is the whole point.
+
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+PROBE_PY="$ROOT/bin/probe-form.py"
+IMAGE="playwright-probe:local"
+
+[[ -f "$PROBE_PY" ]] || { echo "missing $PROBE_PY" >&2; exit 2; }
+[[ -n "${1:-}" ]] || { echo "usage: $(basename "$0") <url> [--wait <s>] [--ignore-ssl]" >&2; exit 2; }
+
+exec docker run --rm -i --network host \
+    -v "$PROBE_PY:/probe.py:ro" \
+    "$IMAGE" \
+    python /probe.py "$@"
